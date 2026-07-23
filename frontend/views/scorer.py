@@ -2,7 +2,7 @@ from typing import Optional
 
 import streamlit as st
 
-from frontend.services import direct_service
+from backend.services import direct_service
 from frontend.components.dashboard import display_results_dashboard
 
 
