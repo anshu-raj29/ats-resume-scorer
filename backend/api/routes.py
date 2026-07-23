@@ -137,8 +137,11 @@ async def get_history(user_id: str = Depends(get_current_user)):
     try:
         return await get_user_history(user_id)
     except Exception as exc:
-        logger.error(f'History fetch failed: {exc}')
-        raise HTTPException(status_code=500, detail=f'Could not load history: {exc}')
+        logger.exception("History fetch failed")
+        raise HTTPException(
+            status_code=500,
+            detail=str(exc),
+        )
 
 
 @router.delete('/history/{analysis_id}')
