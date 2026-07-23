@@ -82,3 +82,14 @@ def get_history_pdf(analysis_id: str, access_token: str) -> bytes:
     )
     response.raise_for_status()
     return response.content
+
+def get_history(access_token: str) -> List[Dict[str, Any]]:
+    print("Calling:", f"{_backend_url()}/api/v1/history")
+    response = requests.get(
+        f"{_backend_url()}/api/v1/history",
+        headers=_auth_headers(access_token),
+        timeout=30,
+    )
+    print(response.status_code, response.text)
+    response.raise_for_status()
+    return response.json()
