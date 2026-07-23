@@ -1,0 +1,20 @@
+*.zip
+
+# Local environment
+.env
+.venv/
+venv/
+env/
+frontend/.streamlit/secrets.toml
+
+# Python runtime files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Logs and generated output
+*.log
+backend/logs/
+
+# Large local media/demo artifacts
+*.mp4
