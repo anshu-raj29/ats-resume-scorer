@@ -46,10 +46,27 @@ SCORE_WEIGHTS = {
 JD_KEYWORD_WEIGHT=0.6
 JD_SEMANTIC_WEIGHT=0.4
 
-SUPABASE_URL       = os.getenv('SUPABASE_URL', '')
-SUPABASE_KEY       = os.getenv('SUPABASE_KEY', '')          # service_role — DB writes (bypasses RLS)
-SUPABASE_ANON_KEY  = os.getenv('SUPABASE_ANON_KEY', '')     # public anon — frontend auth calls
-SUPABASE_JWT_SECRET= os.getenv('SUPABASE_JWT_SECRET', '')   # used by backend to verify access tokens
-GROQ_API_KEY       = os.getenv('GROQ_API_KEY', '')
+def get_config_value(name, default=""):
+    # 1. Try environment variables / local .env
+    value = os.getenv(name)
+    if value:
+        return value
 
+    # 2. Try Streamlit Cloud Secrets
+    try:
+        import streamlit as st
+        value = st.secrets.get(name)
+        if value:
+            return str(value)
+    except Exception:
+        pass
+
+    return default
+
+
+SUPABASE_URL = get_config_value("SUPABASE_URL")
+SUPABASE_KEY = get_config_value("SUPABASE_KEY")
+SUPABASE_ANON_KEY = get_config_value("SUPABASE_ANON_KEY")
+SUPABASE_JWT_SECRET = get_config_value("SUPABASE_JWT_SECRET")
+GROQ_API_KEY = get_config_value("GROQ_API_KEY")
 
