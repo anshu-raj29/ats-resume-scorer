@@ -18,7 +18,7 @@ def _get_headers():
         "Prefer": "return=representation"
     }
 
-async def save_analysis(user_id: str, filename: str, analysis_result: Dict) -> Optional[str]:
+# async def save_analysis(user_id: str, filename: str, analysis_result: Dict) -> Optional[str]:
     headers = _get_headers()
     if not headers:
         return None
@@ -54,7 +54,51 @@ async def save_analysis(user_id: str, filename: str, analysis_result: Dict) -> O
     except Exception as exc:
         logger.error(f"Failed to save analysis to Supabase: {exc}")
         return None
+async def save_analysis(user_id: str, filename: str, analysis_result: Dict) -> Optional[str]:
+    headers = _get_headers()
+    if not headers:
+        raise Exception("SUPABASE_URL or SUPABASE_KEY is missing")
 
+    def _json_default(o):
+        if hasattr(o, "model_dump"):
+            return o.model_dump()
+        return str(o)
+
+    serializable_result = json.loads(
+        json.dumps(analysis_result, default=_json_default)
+    )
+
+    doc = {
+        "user_id": user_id,
+        "filename": filename,
+        "ats_score": serializable_result.get("ats_score", 0),
+        "keyword_match": serializable_result.get("keyword_match", 0),
+        "missing_keywords": serializable_result.get("missing_keywords", []),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "analysis_result": serializable_result,
+    }
+
+    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/analyses"
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            url,
+            headers=headers,
+            json=doc,
+        )
+
+        print("STATUS:", response.status_code)
+        print("BODY:", response.text)
+
+        response.raise_for_status()
+
+        data = response.json()
+
+        if data:
+            return str(data[0]["id"])
+
+        return None
+    
 async def get_user_history(user_id: str) -> List[Dict]:
     headers = _get_headers()
     if not headers:
