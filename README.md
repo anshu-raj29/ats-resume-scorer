@@ -4,9 +4,7 @@ ATS Resume Scorer is an AI-powered resume analysis app that scores a resume agai
 
 ## Demo Video
 
-<video src="./media/ATS%20Resume%20Scorer.mp4" controls width="100%">
-  Your browser does not support the video tag.
-</video>
+https://github.com/anshu-raj29/ats-resume-scorer/raw/main/media/ATS%20Resume%20Scorer.mp4
 
 ## Features
 
