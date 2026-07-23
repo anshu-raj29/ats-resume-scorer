@@ -8,23 +8,31 @@ from frontend.components._helpers import get_severity_style
 SEVERITY_ORDER = ["critical", "high", "medium", "low"]
 
 
-def _group_by_severity(issues: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
-    grouped: Dict[str, List[Dict[str, Any]]] = {level: [] for level in SEVERITY_ORDER}
+def _value(issue, key, default=None):
+    if hasattr(issue, key):
+        value = getattr(issue, key)
+        return default if value is None else value
+    return issue.get(key, default)
+
+
+def _group_by_severity(issues):
+    grouped = {level: [] for level in SEVERITY_ORDER}
     for issue in issues:
-        level = (issue.get("severity_level") or "low").lower()
+        level = (_value(issue, "severity_level", "low") or "low").lower()
         grouped.setdefault(level, []).append(issue)
     return grouped
 
 
-def _render_issue(issue: Dict[str, Any]) -> None:
-    icon, text_color, bg_color = get_severity_style(issue.get("severity_level"))
-    title = issue.get("issue_title", "Untitled issue")
-    impact = issue.get("ats_impact", "")
-    explanation = issue.get("explanation", "")
-    where = issue.get("where_it_appears", "")
-    how_to_fix = issue.get("how_to_fix", "")
-    action_items = issue.get("action_items") or []
-    example = issue.get("example_improvement", "")
+def _render_issue(issue):
+    icon, text_color, bg_color = get_severity_style(_value(issue, "severity_level"))
+
+    title = _value(issue, "issue_title", "Untitled issue")
+    impact = _value(issue, "ats_impact", "")
+    explanation = _value(issue, "explanation", "")
+    where = _value(issue, "where_it_appears", "")
+    how_to_fix = _value(issue, "how_to_fix", "")
+    action_items = _value(issue, "action_items", []) or []
+    example = _value(issue, "example_improvement", "")
 
     st.markdown(
         f"""
@@ -53,19 +61,21 @@ def _render_issue(issue: Dict[str, Any]) -> None:
             st.code(example, language="text")
 
 
-def display_detailed_feedback(analysis: Dict[str, Any]) -> None:
+def display_detailed_feedback(analysis):
     issues = analysis.get("detailed_feedback") or []
     if not issues:
-        return  # backend produced no per-issue feedback this run
+        return
 
     st.markdown("### 🔍 Detailed Feedback")
     st.caption(f"{len(issues)} issue(s) flagged — grouped by severity.")
 
     grouped = _group_by_severity(issues)
+
     for level in SEVERITY_ORDER:
         items = grouped.get(level, [])
         if not items:
             continue
+
         st.markdown(f"#### {level.title()} ({len(items)})")
         for issue in items:
             _render_issue(issue)
