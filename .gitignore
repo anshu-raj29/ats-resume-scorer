@@ -18,3 +18,4 @@ backend/logs/
 
 # Large local media/demo artifacts
 *.mp4
+!ATS Resume Scorer.mp4
