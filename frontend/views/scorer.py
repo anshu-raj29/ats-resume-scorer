@@ -3,7 +3,6 @@ from typing import Optional
 #import requests
 import streamlit as st
 
-#from frontend.services import api_client
 from frontend.components.dashboard import display_results_dashboard
 from backend.services.resume_parser import parse_resume_file
 from backend.services.resume_analyzer import analyze_full_resume
