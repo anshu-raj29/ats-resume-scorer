@@ -6,8 +6,6 @@ import streamlit as st
 from frontend.components.dashboard import display_results_dashboard
 from backend.services.resume_parser import parse_resume_file
 from backend.services.resume_analyzer import analyze_full_resume
-from backend.services.report_generator import generate_html_reports
-from backend.services.pdf_export import generate_combined_pdf
 
 import spacy
 from sentence_transformers import SentenceTransformer
@@ -121,39 +119,16 @@ def _render_upload_area(analysis_mode: str):
 
 def _render_export_buttons(analysis: dict) -> None:
     st.markdown("### 📥 Export Results")
-    c1, c2 = st.columns(2)
 
-    with c1:
-        # Lazy: only call the backend the first time the user clicks expand.
-        if st.button("📑 Generate PDF Report", use_container_width=True, type="primary"):
-            try:
-                with st.spinner("Generating PDF on backend..."):
-                    html_docs = generate_html_reports(analysis)
-                    pdf_bytes = generate_combined_pdf(html_docs)
-                st.session_state["scorer_pdf_bytes"] = pdf_bytes
-            except Exception as e:
-                st.error(f"Analysis failed: {e}")
-                return
+    st.info("📄 PDF export is temporarily unavailable on Streamlit Cloud.")
 
-        if "scorer_pdf_bytes" in st.session_state:
-            st.download_button(
-                "⬇️ Download PDF",
-                data=st.session_state["scorer_pdf_bytes"],
-                file_name="ats_resume_report.pdf",
-                mime="application/pdf",
-                use_container_width=True,
-                key="download_pdf_report",
-            )
-
-    with c2:
-        st.download_button(
-            "📄 Download Summary (.txt)",
-            data=_summary_text(analysis),
-            file_name="ats_summary.txt",
-            mime="text/plain",
-            use_container_width=True,
-            key="download_summary",
-        )
+    st.download_button(
+        "📄 Download Summary (.txt)",
+        data=_summary_text(analysis),
+        file_name="ats_summary.txt",
+        mime="text/plain",
+        use_container_width=True,
+    )
 
 
 def render() -> None:
