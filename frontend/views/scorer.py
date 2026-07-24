@@ -11,6 +11,8 @@ import subprocess
 import sys
 from sentence_transformers import SentenceTransformer
 
+import asyncio
+from backend.database.supabase_db import save_analysis
 
 @st.cache_resource
 def load_nlp():
@@ -214,6 +216,20 @@ def render() -> None:
         return
 
     st.session_state["scorer_analysis"] = analysis
+    # Save analysis to Supabase
+    user_id = st.session_state.get("user_id")
+    if user_id:
+        try:
+            asyncio.run(
+                save_analysis(
+                    user_id=user_id,
+                    filename=resume_file.name,
+                    analysis_result=analysis,
+                )
+            )
+        except Exception as e:
+            st.warning(f"Could not save analysis history: {e}")
+
     st.success("✅ Analysis complete!")
     display_results_dashboard(analysis)
     _render_export_buttons(analysis)
