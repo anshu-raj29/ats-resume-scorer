@@ -9,9 +9,12 @@ DEFAULT_BACKEND_URL = "http://localhost:8000"
 
 def _backend_url() -> str:
     try:
-        return st.secrets["backend"]["url"]
+        url = st.secrets["backend"]["url"]
     except (KeyError, FileNotFoundError):
-        return DEFAULT_BACKEND_URL
+        url = DEFAULT_BACKEND_URL
+
+    st.write("Backend URL:", url)   # Temporary debug
+    return url
 
 
 def _auth_headers(access_token: str) -> Dict[str, str]:
