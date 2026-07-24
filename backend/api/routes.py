@@ -30,8 +30,9 @@ async def analyze_resume(
     warnings: List[str] = []
 
 
-    nlp      = request.app.state.nlp
-    embedder = request.app.state.embedder
+    nlp = request.app.state.nlp
+    from sentence_transformers import SentenceTransformer
+    embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
 
     try:
