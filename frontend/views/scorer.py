@@ -1,6 +1,5 @@
 from typing import Optional
 
-#import requests
 import streamlit as st
 
 from frontend.components.dashboard import display_results_dashboard
@@ -8,16 +7,29 @@ from backend.services.resume_parser import parse_resume_file
 from backend.services.resume_analyzer import analyze_full_resume
 
 import spacy
+import subprocess
+import sys
 from sentence_transformers import SentenceTransformer
+
+
 @st.cache_resource
 def load_nlp():
-    return spacy.load("en_core_web_sm")
+    try:
+        return spacy.load("en_core_web_sm")
+    except OSError:
+        subprocess.check_call(
+            [sys.executable, "-m", "spacy", "download", "en_core_web_sm"]
+        )
+        return spacy.load("en_core_web_sm")
+
 
 nlp = load_nlp()
+
 
 @st.cache_resource
 def load_embedder():
     return SentenceTransformer("all-MiniLM-L6-v2")
+
 
 embedder = load_embedder()
 
