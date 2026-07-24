@@ -28,10 +28,12 @@ async def analyze_resume(
     user_id: str = Depends(get_current_user),
 ):
     warnings: List[str] = []
+    logger.info("=== Analyze Resume Request Received ===")
 
 
     nlp = request.app.state.nlp
     # Lazy-load SentenceTransformer on first request
+    logger.info("Checking SentenceTransformer...")
     embedder = request.app.state.embedder
     if embedder is None:
         logger.info("Loading SentenceTransformer model...")
@@ -43,11 +45,13 @@ async def analyze_resume(
         request.app.state.embedder = embedder
 
         logger.info("SentenceTransformer loaded successfully.")
+        logger.info("SentenceTransformer is ready.")
 
 
     try:
         file_bytes = await resume.read()
         filename   = resume.filename or 'resume'
+        logger.info(f"Received file: {filename}")
 
         from backend.services.resume_parser import (
             FileParsingError,
@@ -57,6 +61,7 @@ async def analyze_resume(
 
         resume_text, _metadata = parse_resume_file(file_bytes, filename)
         logger.info(f"Parsed '{filename}': {len(resume_text)} chars extracted")
+        logger.info("Resume parsing completed.")
 
     except Exception as exc:
         logger.error(f'File parsing failed: {exc}')
@@ -65,19 +70,30 @@ async def analyze_resume(
             detail=f'Could not read or parse the resume: {exc}',
         )
 
-    #Full Analysis Pipeline 
+    # Full Analysis Pipeline
+    import traceback
+    import time
     try:
+        logger.info("=== Starting full analysis ===")
         from backend.services.resume_analyzer import analyze_full_resume
-        
+        start = time.time()
         result = analyze_full_resume(
-            resume_text=resume_text,
-            nlp=nlp,
-            embedder=embedder,
-            job_description=job_description
+        resume_text=resume_text,
+        nlp=nlp,
+        embedder=embedder,
+        job_description=job_description
         )
+        logger.info(
+        f"=== Analysis completed successfully in {time.time() - start:.2f} seconds ==="
+        )
+
     except Exception as exc:
-        logger.error(f'Full analysis pipeline failed: {exc}')
-        raise HTTPException(status_code=500, detail=f'Analysis pipeline failed: {exc}')
+        logger.exception("Full analysis pipeline crashed")
+        traceback.print_exc()
+        raise HTTPException(
+        status_code=500,
+        detail=f"Analysis pipeline failed: {str(exc)}",
+        )
 
     from backend.models.schemas import ComponentScores
 

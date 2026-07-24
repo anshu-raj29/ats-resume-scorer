@@ -36,6 +36,12 @@ def analyze_resume(
         "resume": (resume_file.name, resume_file.getvalue(), resume_file.type),
     }
     data = {"job_description": job_description}
+
+    # Debug output
+    st.write("Backend URL:", _backend_url())
+    st.write("Access token present:", bool(access_token))
+    st.write("Resume:", resume_file.name)
+
     response = requests.post(
         f"{_backend_url()}/api/v1/analyze-resume",
         files=files,
@@ -43,6 +49,10 @@ def analyze_resume(
         headers=_auth_headers(access_token),
         timeout=180,
     )
+
+    st.write("Status Code:", response.status_code)
+    st.write("Response:", response.text)
+
     response.raise_for_status()
     return response.json()
 
