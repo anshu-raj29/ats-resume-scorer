@@ -73,20 +73,21 @@ def detect_location_info(text: str, nlp: spacy.Language) -> Dict:
     }
 
 def _calculate_semantic_similarity(skill: str, text: str, embedder: SentenceTransformer) -> float:
-    #similarity = (A · B) / (|A| × |B|)
     if not skill or not text:
         return 0.0
-    try:
-        skill_vec  = embedder.encode(skill, convert_to_tensor=False)
-        text_vec   = embedder.encode(text,  convert_to_tensor=False)
 
-        similarity = np.dot(skill_vec, text_vec) / (
-            np.linalg.norm(skill_vec) * np.linalg.norm(text_vec)
+    try:
+        embeddings = embedder.encode(
+            [skill, text],
+            convert_to_numpy=True,
+            normalize_embeddings=True,
         )
 
-        return float(max(0.0, min(1.0, similarity)))
+        similarity = float(np.dot(embeddings[0], embeddings[1]))
+        return max(0.0, min(1.0, similarity))
+
     except Exception as e:
-        log_warning(f"Similarity error for '{skill}': {e}", context='ats_scorer')
+        log_warning(f"Similarity error for '{skill}': {e}", context="ats_scorer")
         return 0.0
 
 def _skill_matches(skill: str, text: str, embedder: SentenceTransformer, threshold: float) -> Tuple[bool, float]:
