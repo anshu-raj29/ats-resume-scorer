@@ -31,8 +31,7 @@ async def analyze_resume(
 
 
     nlp = request.app.state.nlp
-    from sentence_transformers import SentenceTransformer
-    embedder = SentenceTransformer("all-MiniLM-L6-v2")
+    embedder = request.app.state.embedder
 
 
     try:
