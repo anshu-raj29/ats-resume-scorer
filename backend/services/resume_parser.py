@@ -1,5 +1,4 @@
 import io
-import magic
 from typing import Tuple, Optional, Tuple
 
 import pdfplumber
@@ -40,21 +39,18 @@ def validate_file(file_data:bytes, filename:str)->Tuple[bool, str, Optional[str]
     if file_size_bytes==0:
         return False, 'uploade file is empty...please check the file you have uploaded and try again'
     
-    try:
-        mime_type=magic.from_buffer(file_data, mime=True)
-    except Exception as e:
-        return False, f"error deteminin the file type : {e}", None
-    
-    if mime_type not in SUPPORTED_MIME_TYPES:
-        supported=', '.join(SUPPORTED_MIME_TYPES.keys()).upper()
+    from pathlib import Path
+    ext = Path(filename).suffix.lower()
+    extension_map = {
+    ".pdf": "pdf",
+    ".docx": "docx",
+    ".doc": "doc",
+    }
+    if ext not in extension_map:
         return False, (
-            f'Unsupported file type: {mime_type}. '
-            f'Please upload one of: {supported}.'
-        ), None
-    
-    
-
-    return True, '', SUPPORTED_MIME_TYPES[mime_type]
+        "Unsupported file type. Please upload a PDF, DOCX, or DOC file."
+    ), None
+    return True, "", extension_map[ext]
 
 def _extract_pdf_hyperlinks(file_data: bytes) -> str:
     urls = []
