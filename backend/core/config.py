@@ -55,9 +55,15 @@ def get_config_value(name, default=""):
     # 2. Try Streamlit Cloud Secrets
     try:
         import streamlit as st
-        value = st.secrets.get(name)
-        if value:
-            return str(value)
+
+        # Top-level secret
+        if name in st.secrets:
+            return str(st.secrets[name])
+
+        # Secret inside [supabase]
+        if "supabase" in st.secrets and name in st.secrets["supabase"]:
+            return str(st.secrets["supabase"][name])
+
     except Exception:
         pass
 
@@ -65,7 +71,10 @@ def get_config_value(name, default=""):
 
 
 SUPABASE_URL = get_config_value("SUPABASE_URL")
-SUPABASE_KEY = get_config_value("SUPABASE_KEY")
+SUPABASE_KEY = (
+    get_config_value("SUPABASE_KEY")
+    or get_config_value("SUPABASE_ANON_KEY")
+)
 SUPABASE_ANON_KEY = get_config_value("SUPABASE_ANON_KEY")
 SUPABASE_JWT_SECRET = get_config_value("SUPABASE_JWT_SECRET")
 GROQ_API_KEY = get_config_value("GROQ_API_KEY")
