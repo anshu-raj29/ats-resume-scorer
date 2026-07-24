@@ -31,7 +31,18 @@ async def analyze_resume(
 
 
     nlp = request.app.state.nlp
+    # Lazy-load SentenceTransformer on first request
     embedder = request.app.state.embedder
+    if embedder is None:
+        logger.info("Loading SentenceTransformer model...")
+
+        from sentence_transformers import SentenceTransformer
+        from backend.core.config import SENTENCE_TRANSFORMER_MODEL
+
+        embedder = SentenceTransformer(SENTENCE_TRANSFORMER_MODEL)
+        request.app.state.embedder = embedder
+
+        logger.info("SentenceTransformer loaded successfully.")
 
 
     try:
