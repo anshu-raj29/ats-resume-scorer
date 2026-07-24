@@ -75,19 +75,19 @@ Important instructions:
 Resume Text:
 {raw_text}"""
 
-def _call_groq(client:Groq, system_prompt:str, user_prompt:str)->str:
-
-    response=client.chat.completions.create(
-        model=GROQ_MODEL, 
+def _call_groq(client: Groq, system_prompt: str, user_prompt: str) -> str:
+    response = client.chat.completions.create(
+        model=GROQ_MODEL,
         messages=[
-            {'role': 'system', 'content': system_prompt},
-            {'role': 'user', 'content': user_prompt}
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
         ],
-        temperature=0.0,
-        max_tokens=1000
+        temperature=0,
+        max_tokens=4096,
+        response_format={"type": "json_object"},
     )
 
-    return response.choices[0].message.content.strip()
+    return response.choices[0].message.content
 
 def _try_parse_json(text: str) -> dict | None:
 
