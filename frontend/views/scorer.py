@@ -1,10 +1,29 @@
 from typing import Optional
 
-import requests
+#import requests
 import streamlit as st
 
-from frontend.services import api_client
+#from frontend.services import api_client
 from frontend.components.dashboard import display_results_dashboard
+from backend.services.resume_parser import parse_resume_file
+from backend.services.resume_analyzer import analyze_full_resume
+from backend.services.report_generator import generate_html_reports
+from backend.services.pdf_export import generate_combined_pdf
+
+import spacy
+from sentence_transformers import SentenceTransformer
+@st.cache_resource
+def load_nlp():
+    return spacy.load("en_core_web_sm")
+
+nlp = load_nlp()
+
+@st.cache_resource
+def load_embedder():
+    return SentenceTransformer("all-MiniLM-L6-v2")
+
+embedder = load_embedder()
+
 
 
 def _read_jd(jd_file, jd_text: str) -> str:
@@ -29,20 +48,7 @@ def _read_jd(jd_file, jd_text: str) -> str:
     return ""
 
 
-def _show_backend_error(exc: Exception) -> None:
-    """Translate a `requests` exception into a friendly Streamlit error."""
-    if isinstance(exc, requests.ConnectionError):
-        st.error("Could not reach the backend. Is `uvicorn backend.main:app` running on port 8000?")
-    elif isinstance(exc, requests.Timeout):
-        st.error("The backend took too long to respond. Try a smaller resume or check the server logs.")
-    elif isinstance(exc, requests.HTTPError) and exc.response is not None:
-        try:
-            detail = exc.response.json().get("detail", exc.response.text)
-        except ValueError:
-            detail = exc.response.text
-        st.error(f"Backend returned {exc.response.status_code}: {detail}")
-    else:
-        st.error(f"Unexpected error: {exc}")
+
 
 
 def _summary_text(analysis: dict) -> str:
@@ -123,13 +129,12 @@ def _render_export_buttons(analysis: dict) -> None:
         if st.button("📑 Generate PDF Report", use_container_width=True, type="primary"):
             try:
                 with st.spinner("Generating PDF on backend..."):
-                    pdf_bytes = api_client.generate_pdf(
-                        analysis,
-                        access_token=st.session_state["access_token"],
-                    )
+                    html_docs = generate_html_reports(analysis)
+                    pdf_bytes = generate_combined_pdf(html_docs)
                 st.session_state["scorer_pdf_bytes"] = pdf_bytes
-            except requests.RequestException as exc:
-                _show_backend_error(exc)
+            except Exception as e:
+                st.error(f"Analysis failed: {e}")
+                return
 
         if "scorer_pdf_bytes" in st.session_state:
             st.download_button(
@@ -185,11 +190,6 @@ def render() -> None:
             display_results_dashboard(st.session_state["scorer_analysis"])
         return
 
-    access_token = st.session_state.get("access_token")
-    if not access_token:
-        st.warning("⚠️ Sign in from the sidebar to analyze a resume.")
-        return
-
     _, mid, _ = st.columns([1, 2, 1])
     with mid:
         analyze = st.button("🚀 Analyze Resume", use_container_width=True, type="primary")
@@ -209,13 +209,22 @@ def render() -> None:
 
     try:
         with st.spinner("Analyzing your resume... this can take 10–30 seconds."):
-            analysis = api_client.analyze_resume(
-                resume_file=resume_file,
-                access_token=access_token,
+            file_bytes = resume_file.read()
+            resume_text, _ = parse_resume_file(
+                file_bytes,
+                resume_file.name,
+            )
+
+            analysis = analyze_full_resume(
+                resume_text=resume_text,
+                nlp=nlp,
+                embedder=embedder,
                 job_description=job_description,
             )
-    except requests.RequestException as exc:
-        _show_backend_error(exc)
+
+            
+    except Exception as e:
+        st.error(f"Analysis failed: {e}")
         return
 
     st.session_state["scorer_analysis"] = analysis
