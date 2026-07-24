@@ -84,7 +84,7 @@ def _call_groq(client:Groq, system_prompt:str, user_prompt:str)->str:
             {'role': 'user', 'content': user_prompt}
         ],
         temperature=0.0,
-        max_tokens=4096
+        max_tokens=1000
     )
 
     return response.choices[0].message.content.strip()
@@ -109,10 +109,15 @@ def _try_parse_json(text: str) -> dict | None:
         return None
     
 def parse_resume(raw_text: str)->Dict:
+    logger.info(f"Resume text length: {len(raw_text)} characters")
 
     client=_get_client()
     prompt=RESUME_USER_PROMPT.format(raw_text=raw_text)
-    raw_response=_call_groq(client, RESUME_SYSTEM_PROMPT, prompt)
+    import time
+
+    start = time.time()
+    raw_response = _call_groq(client, RESUME_SYSTEM_PROMPT, prompt)
+    logger.info(f"Groq API took {time.time() - start:.2f} seconds")
     result=_try_parse_json(raw_response)
 
     if result is not None:
