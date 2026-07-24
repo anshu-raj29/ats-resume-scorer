@@ -228,7 +228,8 @@ def render() -> None:
                 )
             )
         except Exception as e:
-            st.warning(f"Could not save analysis history: {e}")
+            import traceback
+            st.error(traceback.format_exc())
 
     st.success("✅ Analysis complete!")
     display_results_dashboard(analysis)
