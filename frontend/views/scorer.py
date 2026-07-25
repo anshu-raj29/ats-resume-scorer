@@ -1,11 +1,11 @@
 from typing import Optional
 
 import streamlit as st
-
 from frontend.components.dashboard import display_results_dashboard
 from backend.services.resume_parser import parse_resume_file
 from backend.services.resume_analyzer import analyze_full_resume
-
+from backend.services.report_generator import generate_html_reports
+from backend.services.pdf_export import generate_combined_pdf
 import spacy
 import subprocess
 import sys
@@ -131,10 +131,23 @@ def _render_upload_area(analysis_mode: str):
     return resume_file, jd_file, jd_text
 
 
+
 def _render_export_buttons(analysis: dict) -> None:
     st.markdown("### 📥 Export Results")
 
-    st.info("📄 PDF export is temporarily unavailable on Streamlit Cloud.")
+    try:
+        html_docs = generate_html_reports(analysis)
+        pdf_bytes = generate_combined_pdf(html_docs)
+
+        st.download_button(
+            "📄 Download PDF",
+            data=pdf_bytes,
+            file_name="ats_report.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+        )
+    except Exception as e:
+        st.error(f"PDF generation failed: {e}")
 
     st.download_button(
         "📄 Download Summary (.txt)",
@@ -143,7 +156,6 @@ def _render_export_buttons(analysis: dict) -> None:
         mime="text/plain",
         use_container_width=True,
     )
-
 
 def render() -> None:
     # Require user to sign in before accessing the ATS Scorer
