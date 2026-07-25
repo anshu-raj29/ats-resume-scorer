@@ -4,8 +4,7 @@ import streamlit as st
 from frontend.components.dashboard import display_results_dashboard
 from backend.services.resume_parser import parse_resume_file
 from backend.services.resume_analyzer import analyze_full_resume
-from backend.services.report_generator import generate_html_reports
-from backend.services.pdf_export import generate_combined_pdf
+
 import spacy
 import subprocess
 import sys
@@ -136,6 +135,8 @@ def _render_export_buttons(analysis: dict) -> None:
     st.markdown("### 📥 Export Results")
 
     try:
+        from backend.services.report_generator import generate_html_reports
+        from backend.services.pdf_export import generate_combined_pdf
         html_docs = generate_html_reports(analysis)
         pdf_bytes = generate_combined_pdf(html_docs)
 
