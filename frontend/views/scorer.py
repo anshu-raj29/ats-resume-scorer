@@ -146,6 +146,11 @@ def _render_export_buttons(analysis: dict) -> None:
 
 
 def render() -> None:
+    # Require user to sign in before accessing the ATS Scorer
+    if not st.session_state.get("user_id"):
+        st.warning("🔒 Please sign in with Google to use the ATS Resume Scorer.")
+        st.stop()
+
     st.title("🎯 ATS Resume Scorer")
     st.markdown("Upload your resume — and optionally a job description — for a comprehensive analysis.")
 
@@ -173,7 +178,6 @@ def render() -> None:
 
     if not resume_file:
         st.info("👆 Upload your resume to begin.")
-        # If we have a prior result in session, render it again.
         if st.session_state.get("scorer_analysis"):
             display_results_dashboard(st.session_state["scorer_analysis"])
         return
@@ -183,17 +187,19 @@ def render() -> None:
         analyze = st.button("🚀 Analyze Resume", use_container_width=True, type="primary")
 
     if not analyze:
-        # Re-show previous result on rerun (e.g. after PDF generation).
         if st.session_state.get("scorer_analysis"):
             display_results_dashboard(st.session_state["scorer_analysis"])
             _render_export_buttons(st.session_state["scorer_analysis"])
         return
 
-    # Fresh analysis — drop any cached PDF/result.
     st.session_state.pop("scorer_pdf_bytes", None)
     st.session_state.pop("scorer_analysis", None)
 
-    job_description = _read_jd(jd_file, jd_text) if analysis_mode == "Job Description Comparison" else ""
+    job_description = (
+        _read_jd(jd_file, jd_text)
+        if analysis_mode == "Job Description Comparison"
+        else ""
+    )
 
     try:
         with st.spinner("Analyzing your resume... this can take 10–30 seconds."):
@@ -210,12 +216,12 @@ def render() -> None:
                 job_description=job_description,
             )
 
-            
     except Exception as e:
         st.error(f"Analysis failed: {e}")
         return
 
     st.session_state["scorer_analysis"] = analysis
+
     # Save analysis to Supabase
     user_id = st.session_state.get("user_id")
     if user_id:
@@ -227,7 +233,7 @@ def render() -> None:
                     analysis_result=analysis,
                 )
             )
-        except Exception as e:
+        except Exception:
             import traceback
             st.error(traceback.format_exc())
 
