@@ -98,7 +98,11 @@ def _call_groq(client: Groq, system_prompt: str, user_prompt: str) -> str:
         )
     except NotFoundError as error:
         error_body = error.body
-        api_error = error_body.get("error", {}) if isinstance(error_body, dict) else {}
+        api_error = (
+            error_body.get("error", error_body)
+            if isinstance(error_body, dict)
+            else {}
+        )
         if (
             api_error.get("code") != "model_not_found"
             or _active_groq_model == DEFAULT_GROQ_MODEL
