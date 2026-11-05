@@ -72,14 +72,18 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-4. Create a `.env` file for any external integrations you use. The public Streamlit scorer does not require Supabase authentication or database credentials.
+4. Configure the Groq API key either as `GROQ_API_KEY` in `.env` or as a top-level Streamlit secret. The public Streamlit scorer does not require Supabase authentication or database credentials.
 
 ```env
 GROQ_API_KEY=your_groq_api_key
 GROQ_MODEL=openai/gpt-oss-20b
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_KEY=your_supabase_backend_key
+```
+
+For Streamlit secrets, add these entries to `.streamlit/secrets.toml` or the app's Streamlit Cloud secrets:
+
+```toml
+GROQ_API_KEY = "your_groq_api_key"
+GROQ_MODEL = "openai/gpt-oss-20b"
 ```
 
 The Streamlit app is public and does not require an account. Resume analyses are not saved to per-user database history.

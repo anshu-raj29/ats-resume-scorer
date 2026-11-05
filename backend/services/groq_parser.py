@@ -1,4 +1,3 @@
-import os
 import json 
 import logging
 from typing import Dict
@@ -16,10 +15,12 @@ _client=None
 def _get_client()->Groq:
     global _client
     if _client is None:
-        api_key=os.getenv('GROQ_API_KEY')
+        api_key = get_config_value("GROQ_API_KEY")
 
         if not api_key:
-            raise ValueError("GROQ_API_KEY environment variable not set")
+            raise ValueError(
+                "GROQ_API_KEY is not configured in the environment or Streamlit secrets"
+            )
         _client=Groq(api_key=api_key)
     return _client
 
@@ -263,4 +264,3 @@ def _validate_resume_result(result: dict) -> dict:
         proj.setdefault("technologies", [])
 
     return result
-
