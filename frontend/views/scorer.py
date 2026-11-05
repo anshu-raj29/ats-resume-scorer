@@ -10,9 +10,6 @@ import subprocess
 import sys
 from sentence_transformers import SentenceTransformer
 
-import asyncio
-from backend.database.supabase_db import save_analysis
-
 @st.cache_resource
 def load_nlp():
     try:
@@ -159,11 +156,6 @@ def _render_export_buttons(analysis: dict) -> None:
     )
 
 def render() -> None:
-    # Require user to sign in before accessing the ATS Scorer
-    if not st.session_state.get("user_id"):
-        st.warning("🔒 Please log in from the sidebar to use the ATS Resume Scorer.")
-        st.stop()
-
     st.title("🎯 ATS Resume Scorer")
     st.markdown("Upload your resume — and optionally a job description — for a comprehensive analysis.")
 
@@ -234,21 +226,6 @@ def render() -> None:
         return
 
     st.session_state["scorer_analysis"] = analysis
-
-    # Save analysis to Supabase
-    user_id = st.session_state.get("user_id")
-    if user_id:
-        try:
-            asyncio.run(
-                save_analysis(
-                    user_id=user_id,
-                    filename=resume_file.name,
-                    analysis_result=analysis,
-                )
-            )
-        except Exception:
-            import traceback
-            st.error(traceback.format_exc())
 
     st.success("✅ Analysis complete!")
     display_results_dashboard(analysis)

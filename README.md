@@ -14,7 +14,7 @@ https://github.com/anshu-raj29/ats-resume-scorer/raw/main/media/ATS%20Resume%20S
 - Skill validation and gap analysis.
 - Strengths, issues, and detailed improvement feedback.
 - Actionable recommendations for resume optimization.
-- Analysis history with Supabase-backed authentication.
+- Public resume analysis with downloadable reports.
 - PDF report generation.
 
 ## Tech Stack
@@ -72,7 +72,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-4. Create a `.env` file and add the required API keys and Supabase configuration.
+4. Create a `.env` file for any external integrations you use. The public Streamlit scorer does not require Supabase authentication or database credentials.
 
 ```env
 GROQ_API_KEY=your_groq_api_key
@@ -81,8 +81,7 @@ SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_KEY=your_supabase_backend_key
 ```
 
-For username/password accounts, disable email confirmation in **Supabase → Authentication → Settings**. The app maps each username to an internal, non-deliverable address because Supabase password auth requires an email; users only enter a username and password. The single account form automatically creates a new account or logs in an existing one. New account IDs continue to own their rows in the `analyses` table. Existing email-based accounts are not migrated.
-`SUPABASE_ANON_KEY` is used by frontend authentication. `SUPABASE_KEY` is used by the backend to write and read `analyses`; configure it with a key that has the required table access and keep it private.
+The Streamlit app is public and does not require an account. Resume analyses are not saved to per-user database history.
 
 ## Run Locally
 
