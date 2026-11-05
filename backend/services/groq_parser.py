@@ -2,13 +2,15 @@ import json
 import logging
 from typing import Dict
 
-from groq import Groq
+from groq import Groq, NotFoundError
 from backend.core.config import get_config_value
 
 logger=logging.getLogger('ats_resume_scorer')
 
 
-GROQ_MODEL = get_config_value("GROQ_MODEL", "openai/gpt-oss-20b")
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b"
+GROQ_MODEL = get_config_value("GROQ_MODEL", DEFAULT_GROQ_MODEL)
+_active_groq_model = GROQ_MODEL
 
 _client=None
 
@@ -78,16 +80,41 @@ Resume Text:
 {raw_text}"""
 
 def _call_groq(client: Groq, system_prompt: str, user_prompt: str) -> str:
-    response = client.chat.completions.create(
-        model=GROQ_MODEL,
-        messages=[
+    global _active_groq_model
+    request = {
+        "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        temperature=0,
-        max_tokens=4096,
-        response_format={"type": "json_object"},
-    )
+        "temperature": 0,
+        "max_tokens": 4096,
+        "response_format": {"type": "json_object"},
+    }
+
+    try:
+        response = client.chat.completions.create(
+            model=_active_groq_model,
+            **request,
+        )
+    except NotFoundError as error:
+        error_body = error.body
+        api_error = error_body.get("error", {}) if isinstance(error_body, dict) else {}
+        if (
+            api_error.get("code") != "model_not_found"
+            or _active_groq_model == DEFAULT_GROQ_MODEL
+        ):
+            raise
+
+        logger.warning(
+            "Groq model %r is unavailable; retrying with %r",
+            _active_groq_model,
+            DEFAULT_GROQ_MODEL,
+        )
+        _active_groq_model = DEFAULT_GROQ_MODEL
+        response = client.chat.completions.create(
+            model=_active_groq_model,
+            **request,
+        )
 
     return response.choices[0].message.content
 
