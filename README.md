@@ -77,8 +77,12 @@ pip install -r requirements.txt
 ```env
 GROQ_API_KEY=your_groq_api_key
 SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_key
+SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_KEY=your_supabase_backend_key
 ```
+
+For username-only accounts, disable email confirmation in **Supabase → Authentication → Settings**. The app maps each username to an internal, non-deliverable address because Supabase password auth requires an email; users only enter a username and password. New account IDs continue to own their rows in the `analyses` table. Existing email-based accounts are not migrated.
+`SUPABASE_ANON_KEY` is used by frontend authentication. `SUPABASE_KEY` is used by the backend to write and read `analyses`; configure it with a key that has the required table access and keep it private.
 
 ## Run Locally
 

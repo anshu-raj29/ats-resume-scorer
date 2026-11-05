@@ -161,7 +161,7 @@ def _render_export_buttons(analysis: dict) -> None:
 def render() -> None:
     # Require user to sign in before accessing the ATS Scorer
     if not st.session_state.get("user_id"):
-        st.warning("🔒 Please sign in with Google to use the ATS Resume Scorer.")
+        st.warning("🔒 Please log in from the sidebar to use the ATS Resume Scorer.")
         st.stop()
 
     st.title("🎯 ATS Resume Scorer")

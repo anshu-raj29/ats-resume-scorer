@@ -1,10 +1,7 @@
-import logging
 import httpx
 import json
 from datetime import datetime, timezone
 from typing import List, Optional, Dict
-
-logger = logging.getLogger('ats_resume_scorer')
 
 from backend.core.config import SUPABASE_URL, SUPABASE_KEY
 
@@ -22,7 +19,7 @@ def _get_headers():
 async def save_analysis(user_id: str, filename: str, analysis_result: Dict) -> Optional[str]:
     headers = _get_headers()
     if not headers:
-        raise Exception("SUPABASE_URL or SUPABASE_KEY is missing")
+        raise RuntimeError("SUPABASE_URL or SUPABASE_KEY is missing")
 
     def _json_default(o):
         if hasattr(o, "model_dump"):
@@ -52,9 +49,6 @@ async def save_analysis(user_id: str, filename: str, analysis_result: Dict) -> O
             json=doc,
         )
 
-        print("STATUS:", response.status_code)
-        print("BODY:", response.text)
-
         response.raise_for_status()
 
         data = response.json()
@@ -67,61 +61,50 @@ async def save_analysis(user_id: str, filename: str, analysis_result: Dict) -> O
 async def get_user_history(user_id: str) -> List[Dict]:
     headers = _get_headers()
     if not headers:
-        return []
+        raise RuntimeError("SUPABASE_URL or SUPABASE_KEY is missing")
 
     url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/analyses"
-    
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                url, 
-                headers=headers, 
-                params={
-                    "user_id": f"eq.{user_id}",
-                    "order": "created_at.desc"
-                }
-            )
-            response.raise_for_status()
-            docs = response.json()
-            
-            results = []
-            for doc in docs:
-                results.append({
-                    "id": str(doc.get("id")),
-                    "filename": doc.get("filename", "resume"),
-                    "resume_name": doc.get("filename", "resume"),
-                    "job_title": "Software Engineer",
-                    "ats_score": doc.get("ats_score", 0),
-                    "keyword_match": doc.get("keyword_match", 0),
-                    "missing_keywords": doc.get("missing_keywords", []),
-                    "date": doc.get("created_at", ""),
-                    "created_at": doc.get("created_at", ""),
-                    "analysis_result": doc.get("analysis_result", {}),
-                })
-            return results
-    except Exception as exc:
-        logger.error(f"Failed to fetch history from Supabase: {exc}")
-        return []
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            url,
+            headers=headers,
+            params={
+                "user_id": f"eq.{user_id}",
+                "order": "created_at.desc"
+            }
+        )
+        response.raise_for_status()
+        docs = response.json()
+
+    return [{
+        "id": str(doc.get("id")),
+        "filename": doc.get("filename", "resume"),
+        "resume_name": doc.get("filename", "resume"),
+        "job_title": "Software Engineer",
+        "ats_score": doc.get("ats_score", 0),
+        "keyword_match": doc.get("keyword_match", 0),
+        "missing_keywords": doc.get("missing_keywords", []),
+        "date": doc.get("created_at", ""),
+        "created_at": doc.get("created_at", ""),
+        "analysis_result": doc.get("analysis_result", {}),
+    } for doc in docs]
 
 async def delete_analysis(analysis_id: str, user_id: str) -> bool:
     headers = _get_headers()
     if not headers:
-        return False
+        raise RuntimeError("SUPABASE_URL or SUPABASE_KEY is missing")
 
     url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/analyses"
-    
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.delete(
-                url, 
-                headers=headers, 
-                params={
-                    "id": f"eq.{analysis_id}",
-                    "user_id": f"eq.{user_id}"
-                }
-            )
-            response.raise_for_status()
-            return True
-    except Exception as exc:
-        logger.error(f"Failed to delete analysis {analysis_id}: {exc}")
-        return False
+
+    async with httpx.AsyncClient() as client:
+        response = await client.delete(
+            url,
+            headers=headers,
+            params={
+                "id": f"eq.{analysis_id}",
+                "user_id": f"eq.{user_id}"
+            }
+        )
+        response.raise_for_status()
+        return bool(response.json())
