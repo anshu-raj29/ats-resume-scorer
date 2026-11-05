@@ -4,11 +4,12 @@ import logging
 from typing import Dict
 
 from groq import Groq
+from backend.core.config import get_config_value
 
 logger=logging.getLogger('ats_resume_scorer')
 
 
-GROQ_MODEL="llama-3.1-8b-instant"
+GROQ_MODEL = get_config_value("GROQ_MODEL", "openai/gpt-oss-20b")
 
 _client=None
 
@@ -262,5 +263,4 @@ def _validate_resume_result(result: dict) -> dict:
         proj.setdefault("technologies", [])
 
     return result
-
 

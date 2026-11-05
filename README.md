@@ -76,12 +76,14 @@ pip install -r requirements.txt
 
 ```env
 GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=openai/gpt-oss-20b
 SUPABASE_URL=your_supabase_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_KEY=your_supabase_backend_key
 ```
 
 The Streamlit app is public and does not require an account. Resume analyses are not saved to per-user database history.
+`GROQ_MODEL` is optional; it defaults to `openai/gpt-oss-20b`.
 
 ## Run Locally
 
