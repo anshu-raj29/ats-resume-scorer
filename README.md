@@ -81,7 +81,7 @@ SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_KEY=your_supabase_backend_key
 ```
 
-For username-only accounts, disable email confirmation in **Supabase → Authentication → Settings**. The app maps each username to an internal, non-deliverable address because Supabase password auth requires an email; users only enter a username and password. New account IDs continue to own their rows in the `analyses` table. Existing email-based accounts are not migrated.
+For username/password accounts, disable email confirmation in **Supabase → Authentication → Settings**. The app maps each username to an internal, non-deliverable address because Supabase password auth requires an email; users only enter a username and password. The single account form automatically creates a new account or logs in an existing one. New account IDs continue to own their rows in the `analyses` table. Existing email-based accounts are not migrated.
 `SUPABASE_ANON_KEY` is used by frontend authentication. `SUPABASE_KEY` is used by the backend to write and read `analyses`; configure it with a key that has the required table access and keep it private.
 
 ## Run Locally

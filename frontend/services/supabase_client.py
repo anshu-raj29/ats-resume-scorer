@@ -74,31 +74,7 @@ def _session_dict(session, user, username: str) -> Dict[str, Any]:
     }
 
 
-def sign_in_with_password(username: str, password: str) -> Dict[str, Any]:
-    err = _missing_config()
-    if err:
-        return {'error': err}
-    try:
-        normalized_username = _normalize_username(username)
-    except ValueError as exc:
-        return {'error': str(exc)}
-
-    try:
-        resp = get_client().auth.sign_in_with_password(
-            {
-                'email': _username_email(normalized_username),
-                'password': password,
-            }
-        )
-        if not resp.session or not resp.user:
-            return {'error': 'Invalid username or password'}
-        return _session_dict(resp.session, resp.user, normalized_username)
-    except Exception as exc:
-        logger.warning(f'sign_in_with_password failed: {exc}')
-        return {'error': _humanize(exc)}
-
-
-def sign_up_with_password(username: str, password: str) -> Dict[str, Any]:
+def login_or_register(username: str, password: str) -> Dict[str, Any]:
     err = _missing_config()
     if err:
         return {'error': err}
@@ -110,25 +86,52 @@ def sign_up_with_password(username: str, password: str) -> Dict[str, Any]:
         return {'error': 'Password must be at least 6 characters'}
 
     try:
-        resp = get_client().auth.sign_up({
+        auth = get_client().auth
+        resp = auth.sign_in_with_password(
+            {
+                'email': _username_email(normalized_username),
+                'password': password,
+            }
+        )
+        if not resp.session or not resp.user:
+            return {'error': 'Invalid username or password'}
+        result = _session_dict(resp.session, resp.user, normalized_username)
+        result['created'] = False
+        return result
+    except Exception as login_exc:
+        if not _is_invalid_login(login_exc):
+            logger.warning(f'username login failed: {login_exc}')
+            return {'error': _humanize(login_exc)}
+
+    # Supabase returns the same invalid-credentials error for unknown users and
+    # wrong passwords. Attempt signup to distinguish a new username from an
+    # existing account without exposing or querying the auth user directory.
+    try:
+        resp = auth.sign_up({
             'email': _username_email(normalized_username),
             'password': password,
             'options': {'data': {'username': normalized_username}},
         })
         if resp.session and resp.user:
-            return _session_dict(resp.session, resp.user, normalized_username)
+            result = _session_dict(resp.session, resp.user, normalized_username)
+            result['created'] = True
+            return result
         if resp.user:
+            if not getattr(resp.user, 'identities', None):
+                return {'error': 'Incorrect password for this username'}
             return {
                 'error': (
-                    'Account created, but Supabase email confirmation is still '
-                    'enabled. Disable it in Supabase Authentication settings '
-                    'to use username-only accounts.'
+                    'Could not log in or create this account. Check the password '
+                    'if this username already exists. For new accounts, disable '
+                    'email confirmation in Supabase Authentication settings.'
                 )
             }
-        return {'error': 'Sign-up failed'}
-    except Exception as exc:
-        logger.warning(f'sign_up failed: {exc}')
-        return {'error': _humanize(exc)}
+        return {'error': 'Could not log in or create the account'}
+    except Exception as signup_exc:
+        if _is_duplicate_user(signup_exc):
+            return {'error': 'Incorrect password for this username'}
+        logger.warning(f'username registration failed: {signup_exc}')
+        return {'error': _humanize(signup_exc)}
 
 
 def sign_out() -> None:
@@ -166,3 +169,20 @@ def _humanize(exc: Exception) -> str:
     if 'password should be at least' in msg.lower():
         return 'Password must be at least 6 characters'
     return msg
+
+
+def _is_invalid_login(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return 'invalid login' in message or 'invalid_grant' in message
+
+
+def _is_duplicate_user(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return any(
+        phrase in message
+        for phrase in (
+            'user already registered',
+            'already been registered',
+            'email address already exists',
+        )
+    )

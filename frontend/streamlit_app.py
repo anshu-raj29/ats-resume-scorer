@@ -20,8 +20,9 @@ for key, default in [
     ("access_token", None),
     ("refresh_token", None),
     ("user_id", None),       # Supabase auth user id (uuid); also used by api_client
-    ("username", st.session_state.get("user_email")),
+    ("username", None),
     ("auth_error", None),
+    ("auth_info", None),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -66,6 +67,10 @@ with st.sidebar:
 
     from frontend.services import supabase_client
 
+    if st.session_state.auth_info:
+        st.success(st.session_state.auth_info)
+        st.session_state.auth_info = None
+
     if st.session_state.access_token:
         # Signed-in state: show username + sign-out button.
         st.caption(f"Signed in as **{st.session_state.username}**")
@@ -75,53 +80,36 @@ with st.sidebar:
                 st.session_state[k] = None
             st.rerun()
     else:
-        # Signed-out state: username/password login or account creation.
+        # A single username/password form handles login and first-time signup.
         if st.session_state.auth_error:
             st.error(st.session_state.auth_error)
             st.session_state.auth_error = None
 
-        tab_login, tab_signup = st.tabs(["Login", "Sign up"])
-
-        with tab_login:
-            with st.form("login_form", clear_on_submit=False):
-                username = st.text_input("Username", key="login_username")
-                password = st.text_input("Password", type="password", key="login_pw")
-                submitted = st.form_submit_button("Login", use_container_width=True)
-            if submitted:
-                result = supabase_client.sign_in_with_password(username, password)
-                if "error" in result:
-                    st.session_state.auth_error = result["error"]
-                else:
-                    st.session_state.access_token  = result["access_token"]
-                    st.session_state.refresh_token = result["refresh_token"]
-                    st.session_state.user_id       = result["user_id"]
-                    st.session_state.username      = result["username"]
-                st.rerun()
-
-        with tab_signup:
-            with st.form("signup_form", clear_on_submit=False):
-                username = st.text_input(
-                    "Username",
-                    key="signup_username",
-                    help="3–32 letters, numbers, periods, underscores, or hyphens.",
-                )
-                password = st.text_input(
-                    "Password",
-                    type="password",
-                    key="signup_pw",
-                    help="At least 6 characters.",
-                )
-                submitted = st.form_submit_button("Create account", use_container_width=True)
-            if submitted:
-                result = supabase_client.sign_up_with_password(username, password)
-                if "error" in result:
-                    st.session_state.auth_error = result["error"]
-                else:
-                    st.session_state.access_token  = result["access_token"]
-                    st.session_state.refresh_token = result["refresh_token"]
-                    st.session_state.user_id       = result["user_id"]
-                    st.session_state.username      = result["username"]
-                st.rerun()
+        with st.form("account_form", clear_on_submit=False):
+            username = st.text_input(
+                "Username",
+                key="account_username",
+                help="3–32 letters, numbers, periods, underscores, or hyphens.",
+            )
+            password = st.text_input(
+                "Password",
+                type="password",
+                key="account_password",
+                help="At least 6 characters.",
+            )
+            submitted = st.form_submit_button("Continue", use_container_width=True)
+        if submitted:
+            result = supabase_client.login_or_register(username, password)
+            if "error" in result:
+                st.session_state.auth_error = result["error"]
+            else:
+                st.session_state.access_token  = result["access_token"]
+                st.session_state.refresh_token = result["refresh_token"]
+                st.session_state.user_id       = result["user_id"]
+                st.session_state.username      = result["username"]
+                if result["created"]:
+                    st.session_state.auth_info = "Account created."
+            st.rerun()
 
 # Main content area - render based on current view
 if st.session_state.current_view == 'landing':
